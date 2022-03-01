@@ -250,6 +250,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
             now = int(time.time())
             validity = now + expires
 
+        print(f"Registrovanie zariadenia: {fromm}")
         logging.debug("Client address: %s:%s" % self.client_address)
         logging.debug("Expires= %d" % expires)
         registrar[fromm] = [contact, self.socket, self.client_address, validity]
@@ -280,6 +281,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 #logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
                 logging.info(f"({call_id}): {origin} chce zacat hovor s {destination}")
+                print(f"{origin} poslal invite pre hovor s {destination}")
             else:
                 self.sendResponse("480 Temporarily Unavailable")
         else:
@@ -344,11 +346,14 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 #print(msg)
                 if msg == "Request terminated":
                     logging.info(f"({self.data[5]}): {origin} ukoncil vyzvananie pre {self.getDestination()}")
+                    print(f"{origin} ukoncil vyzvananie pre {self.getDestination()}")
                 if msg == "Decline":
-                    logging.info(f"({self.data[5]}): {self.getDestination()} odmietol prijat hovor {origin}")
+                    logging.info(f"({self.data[5]}): {self.getDestination()} odmietol prijat hovor od {origin}")
+                    print(f"{self.getDestination()} odmietol prijat hovor od {origin}")
                 if invited:
                     if msg == "Ok":
                         logging.info(f"({self.data[5]}): {origin} zacal hovor s {self.getDestination()}")
+                        print(f"{origin} zacal hovor s {self.getDestination()}")
 
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
@@ -368,6 +373,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 invited = False
                 self.processNonInvite()
                 logging.info(f"({call_id}): {self.getOrigin()} ukoncil hovor s {self.getDestination()}")
+                print(f"{self.getOrigin()} ukoncil hovor s {self.getDestination()}")
             elif rx_cancel.search(request_uri):
                 invited = False
                 self.processNonInvite()
@@ -413,18 +419,3 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 hexdump(data, ' ', 16)
                 logging.warning("---")
 
-
-if __name__ == "__main__":
-    logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', filename='proxy.log', level=logging.INFO,
-                        datefmt='%H:%M:%S')
-    #logging.info(time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()))
-    hostname = socket.gethostname()
-    #logging.info(hostname)
-    ipaddress = socket.gethostbyname(hostname)
-    # if ipaddress == "127.0.0.1":
-    #     ipaddress = sys.argv[1]
-    #logging.info(ipaddress)
-    recordroute = "Record-Route: <sip:%s:%d;lr>" % (ipaddress, PORT)
-    topvia = "Via: SIP/2.0/UDP %s:%d" % (ipaddress, PORT)
-    server = socketserver.UDPServer((HOST, PORT), UDPHandler)
-    server.serve_forever()
